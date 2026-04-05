@@ -1,36 +1,30 @@
-// Variables and DOM element selectors
 const openMenu = document.getElementById('openMenu');
-const imageOpenMenu = document.querySelector('.humbergerMenu img');
+const imageOpenMenu = document.querySelector('.hamburgerMenu img');
 const menu = document.getElementById('menu');
+
 const openModal = document.getElementById('openModal');
 const modal = document.getElementById('modal');
 const closeModal = document.getElementById('closeModal');
 const allContentDiv = document.getElementById('allContentDiv');
+
 const radioInputs = document.querySelectorAll('input[type="radio"]');
-const successModal = document.querySelector('.sucessModal');
-const successModalBtn = document.querySelector('.sucessModal button');
 const modalOffers = document.querySelectorAll('.modalOffer');
-const progressBar = document.querySelector('progress');
 const allOptions = document.querySelectorAll('.modalOffer');
 
-// Store data
+const successModal = document.querySelector('.sucessModal');
+const successModalBtn = document.querySelector('.sucessModal button');
+
+const progressBar = document.querySelector('progress');
+
+const bookmarkBtn = document.getElementById('bookmark');
+const selectRewardBtns = document.querySelectorAll('.offer .primaryBtn');
+
 const store = {
+  goal: 1000000,
   products: [
-    {
-      name: 'bamboo-stand',
-      stock: 101,
-      minPledge: 25,
-    },
-    {
-      name: 'black-edition-stand',
-      stock: 64,
-      minPledge: 75,
-    },
-    {
-      name: 'mahogany-special-edition',
-      stock: 0,
-      minPledge: 200,
-    },
+    { name: 'bamboo-stand', stock: 101, minPledge: 25 },
+    { name: 'black-edition-stand', stock: 64, minPledge: 75 },
+    { name: 'mahogany-special-edition', stock: 0, minPledge: 200 },
   ],
   stats: {
     totalBackers: 5007,
@@ -39,179 +33,187 @@ const store = {
   },
 };
 
-// Disable pointer events for elements with the "disabled" class
-document.querySelectorAll(".disabled").forEach(element => {
-  element.style.pointerEvents = "none";
+document.querySelectorAll(".disabled").forEach(el => {
+  el.style.pointerEvents = "none";
 });
 
-// Event listener for opening/closing the menu
-openMenu.addEventListener('click', () => {
-  // Toggle the menu icon
-  if (imageOpenMenu.src.includes('images/icon-close-menu.svg')) {
-    imageOpenMenu.src = 'images/icon-hamburger.svg';
-  } else {
-    imageOpenMenu.src = 'images/icon-close-menu.svg';
-  }
-  menu.classList.toggle('menuHidden');
+document.querySelectorAll('input[type="number"]').forEach(input => {
+  preventWritingLetters(input);
 });
 
-// Event listener for opening the modal
-openModal.addEventListener('click', () => {
-  modal.classList.remove('d-none');
-  allContentDiv.classList.add('modalOpened');
+renderStats();
 
-  // Scroll to a specific position based on window width
-  if (window.innerWidth > 992) {
-    window.scrollTo({
-      top: window.innerHeight * 0.19,
-      left: 0,
-      behavior: 'smooth'
-    });
-  } else {
-    window.scrollTo({
-      top: window.innerHeight * 0.10,
-      left: 0,
-      behavior: 'smooth'
-    });
-  }
-});
-
-// Event listener for closing the modal
-closeModal.addEventListener('click', () => {
-  dismissModal(modal);
-});
-
-// Event listeners for selecting an offer in the modal
-modalOffers.forEach((offer) => {
-  offer.addEventListener('click', () => {
-    const radioInput = offer.querySelector('input[type="radio"]');
-    radioInput.checked = true;
-    handleInputChange(radioInput);
+function scrollToModal() {
+  const offset = window.innerWidth > 992 ? 0.19 : 0.10;
+  window.scrollTo({
+    top: window.innerHeight * offset,
+    left: 0,
+    behavior: 'smooth'
   });
-});
-
-// Event listeners for radio button changes in the modal
-radioInputs.forEach((input) => {
-  if (input.checked) {
-    handleInputChange(input);
-  }
-  input.addEventListener('change', () => {
-    handleInputChange(input);
-  });
-});
-
-// Function to handle changes when a radio button is selected
-function handleInputChange(input) {
-  const selectedDiv = input.parentNode.parentNode;
-  const form = selectedDiv.querySelector('form');
-  const previousSelectedDivs = document.querySelectorAll('.borderActive');
-
-  // Deactivate previously selected offers and forms
-  previousSelectedDivs.forEach((previousSelected) => {
-    const previousSelectedDivForm = previousSelected.querySelector('form');
-    previousSelected.classList.remove('borderActive');
-    previousSelectedDivForm.classList.add('d-none');
-  });
-
-  // Activate the selected offer and form
-  selectedDiv.classList.toggle('borderActive', input.checked);
-  form.classList.remove('d-none');
 }
 
-// Event listener for submitting the form
-allOptions.forEach((option) => {
-  const input = option.querySelector('input[type="number"]');
-  const buttonSubmit = option.querySelector('button');
-  buttonSubmit.addEventListener('click', (e) => {
-    e.preventDefault();
-    updateStats(input);
-    dismissModal(modal);
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'smooth'
-    });
-    openSuccessModal();
+function formatCurrency(num) {
+  return `$${new Intl.NumberFormat(navigator.language).format(num)}`;
+}
+
+function preventWritingLetters(input) {
+  input.addEventListener("input", function () {
+    this.value = this.value.replace(/[^0-9]/g, "");
   });
-});
+}
 
-// Event listener for closing the success modal
-successModalBtn.addEventListener('click', () => {
-  dismissModal(successModal);
-});
+function validateInput(input) {
+  const min = parseInt(input.getAttribute("min"));
+  const value = parseInt(input.value);
+  return value >= min;
+}
 
-// Function to open the success modal
+function renderStats() {
+  document.getElementById('totalBackers').textContent =
+    new Intl.NumberFormat().format(store.stats.totalBackers);
+
+  document.getElementById('totalMoney').textContent =
+    formatCurrency(store.stats.totalMoney);
+
+  document.getElementById('totalDays').textContent =
+    new Intl.NumberFormat().format(store.stats.totalDays);
+
+  progressBar.max = store.goal;
+  progressBar.value = store.stats.totalMoney;
+}
+
+function updateStats(input) {
+  const value = parseInt(input.value);
+
+  if (isNaN(value)) return;
+
+  if (!validateInput(input)) return;
+
+  store.stats.totalBackers += 1;
+  store.stats.totalMoney += value;
+  store.stats.totalDays -= 1;
+
+  const product = store.products.find(p => p.minPledge == input.min);
+  if (product && product.stock > 0) {
+    product.stock -= 1;
+  }
+
+  renderStats();
+}
+
+function handleInputChange(input) {
+  const selectedDiv = input.closest('.modalOffer');
+  const form = selectedDiv.querySelector('form');
+
+  document.querySelectorAll('.borderActive').forEach(el => {
+    el.classList.remove('borderActive');
+    const f = el.querySelector('form');
+    if (f) f.classList.add('d-none');
+  });
+
+  selectedDiv.classList.add('borderActive');
+  if (form) form.classList.remove('d-none');
+
+  const pledgeInput = selectedDiv.querySelector('input[type="number"]');
+  if (pledgeInput) {
+    pledgeInput.value = pledgeInput.min;
+    pledgeInput.focus();
+  }
+}
+
+function dismissModal(targetModal) {
+  targetModal.classList.add('d-none');
+  allContentDiv.classList.remove('modalOpened');
+
+  document.querySelectorAll('.borderActive').forEach(el => {
+    el.classList.remove('borderActive');
+    const f = el.querySelector('form');
+    if (f) f.classList.add('d-none');
+  });
+
+  radioInputs.forEach(r => r.checked = false);
+}
+
 function openSuccessModal() {
   successModal.classList.remove('d-none');
   allContentDiv.classList.add('modalOpened');
 }
 
+openMenu.addEventListener('click', () => {
+  imageOpenMenu.src = imageOpenMenu.src.includes('close')
+    ? 'images/icon-hamburger.svg'
+    : 'images/icon-close-menu.svg';
 
-// Function to dismiss the modal
-function dismissModal(modal) {
-  modal.classList.add('d-none');
-  allContentDiv.classList.remove('modalOpened');
-  document.querySelectorAll('.borderActive').forEach((previousSelected) => {
-    const previousSelectedDivForm = previousSelected.querySelector('form');
-    previousSelected.classList.remove('borderActive');
-    previousSelectedDivForm.classList.add('d-none');
+  menu.classList.toggle('menuHidden');
+});
+
+bookmarkBtn.addEventListener('click', () => {
+  bookmarkBtn.classList.toggle('bookmarked');
+});
+
+openModal.addEventListener('click', () => {
+  modal.classList.remove('d-none');
+  allContentDiv.classList.add('modalOpened');
+  scrollToModal();
+});
+
+closeModal.addEventListener('click', () => dismissModal(modal));
+
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) dismissModal(modal);
+});
+
+selectRewardBtns.forEach((btn, index) => {
+  btn.addEventListener('click', () => {
+    modal.classList.remove('d-none');
+    allContentDiv.classList.add('modalOpened');
+    scrollToModal();
+
+    const offer = modalOffers[index + 1];
+    const radio = offer.querySelector('input[type="radio"]');
+    radio.checked = true;
+    handleInputChange(radio);
   });
-  radioInputs.forEach((input) => {
-    input.checked = false;
+});
+
+modalOffers.forEach(offer => {
+  offer.addEventListener('click', () => {
+    const radio = offer.querySelector('input[type="radio"]');
+    if (!radio) return;
+
+    radio.checked = true;
+    handleInputChange(radio);
   });
-}
+});
 
-// Function to format currency
-function formatCurrency(num) {
-  const formattedNum = new Intl.NumberFormat(navigator.language).format(num);
-  return `$${formattedNum}`;
-}
+radioInputs.forEach(input => {
+  input.addEventListener('change', () => handleInputChange(input));
+});
 
-// Function to prevent non-numeric input
-function preventWritingLetters(input) {
-  input.addEventListener("input", function (e) {
-    this.value = this.value.replace(/[^0-9]/g, "");
+allOptions.forEach(option => {
+  const input = option.querySelector('input[type="number"]');
+  const button = option.querySelector('form button');
+
+  if (!button) return;
+
+  button.addEventListener('click', (e) => {
+    e.preventDefault();
+
+    if (!input || input.value === "") return;
+
+    updateStats(input);
+
+    dismissModal(modal);
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+    openSuccessModal();
   });
-}
+});
 
-// Function to validate user input
-function validateInput(input) {
-  const minPledge = input.getAttribute("min");
-  const value = input.value;
-  if (value < minPledge) {
-    return false;
-  } else if (value > minPledge) {
-    return true;
-  }
-}
-
-// Function to render statistics on the page
-function renderStats() {
-  const totalBackersElement = document.getElementById('totalBackers');
-  const totalMoneyElement = document.getElementById('totalMoney');
-  const totalDaysElement = document.getElementById('totalDays');
-  totalBackersElement.textContent = store.stats.totalBackers;
-  totalMoneyElement.textContent = formatCurrency(store.stats.totalMoney);
-  totalDaysElement.textContent = store.stats.totalDays;
-}
-
-// Initial rendering of statistics
-renderStats();
-
-// Function to update statistics when a user makes a pledge
-function updateStats(input) {
-  progressBar.setAttribute('value', store.stats.totalMoney);
-  preventWritingLetters(input);
-  const isValid = validateInput(input);
-  console.log(isValid);
-  if (isValid) {
-    store.stats.totalBackers++;
-    console.log(store.stats.totalMoney);
-    console.log(input.value);
-    store.stats.totalMoney += input.value;
-
-    renderStats();
-  } else {
-    console.error("Invalid input");
-  }
-}
+successModalBtn.addEventListener('click', () => {
+  dismissModal(successModal);
+});
